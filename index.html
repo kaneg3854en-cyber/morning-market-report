@@ -8,17 +8,148 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="朝の経済分析">
 <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon-sour
-<title>朝の経済分析</title>
+<link rel="apple-touch-icon" href="icon-source.png">
+<title>朝の経済分析｜LIVE</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;background:#f5f7fa;color:#0b2a52;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}body{min-height:100vh;display:flex;justify-content:center}.wrap{width:100%;max-width:1600px;padding:10px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px 12px}.title{font-weight:800;font-size:20px}.date{font-size:13px;color:#607086}.report{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(20,45,80,.10);overflow:hidden}.report img{display:block;width:100%;height:auto}.hint{font-size:11px;color:#718096;text-align:center;padding:8px 0 4px}@media(min-width:900px){.wrap{padding:16px}.title{font-size:24px}}
+*{box-sizing:border-box}
+html,body{margin:0;background:#f5f7fa;color:#0b2a52;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
+body{min-height:100vh}
+.wrap{width:100%;max-width:1600px;margin:auto;padding:10px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 4px 12px}
+.title{font-weight:800;font-size:20px}.date{font-size:12px;color:#607086}
+.panel{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(20,45,80,.10);padding:14px;margin-bottom:12px}
+.livehead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.livehead h2{margin:0;font-size:18px}
+.badge{font-size:11px;font-weight:800;border-radius:999px;padding:5px 9px;background:#e8fff1;color:#087a3b;border:1px solid #9be0b9}
+.status{font-size:11px;color:#6b7b8f;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.card{border:1px solid #dfe7f0;border-radius:12px;padding:10px;min-height:88px;background:linear-gradient(180deg,#fff,#f8fbff)}
+.card .name{font-size:12px;font-weight:800;color:#53657a}
+.card .sym{font-size:10px;color:#8a98a8;margin-top:2px}
+.card .price{font-size:21px;font-weight:800;margin-top:7px;letter-spacing:.2px}
+.card .chg{font-size:11px;margin-top:2px}
+.up{color:#0a9a55}.down{color:#d63a3a}.flat{color:#718096}
+.ts{font-size:9px;color:#8a98a8;margin-top:6px}
+.setting{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input{flex:1;min-width:210px;border:1px solid #ccd7e3;border-radius:9px;padding:9px;font-size:13px}
+button{border:0;border-radius:9px;padding:9px 13px;font-weight:800;background:#0b2a52;color:#fff}
+.small{font-size:10px;color:#718096;line-height:1.5;margin-top:8px}
+.report{overflow:hidden}
+.report img{display:block;width:100%;height:auto}
+@media(min-width:700px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.wrap{padding:16px}.title{font-size:24px}}
 </style>
 </head>
 <body>
 <main class="wrap">
-  <header class="top"><div class="title">🌎 朝の経済分析</div><div class="date">最新レポート</div></header>
-  <section class="report"><img src="report.png" alt="現在の世界情勢とマーケット分析"></section>
-  <div class="hint">最新画像が report.png に更新されると、このページにも反映されます。</div>
+<header class="top">
+  <div class="title">🌎 朝の経済分析</div>
+  <div class="date" id="clock">接続準備中</div>
+</header>
+
+<section class="panel">
+  <div class="livehead">
+    <h2>② 主要資産の現在地と方向性</h2>
+    <span class="badge">● LIVE DATA</span>
+  </div>
+  <div class="status" id="status">APIキーを設定するとリアルタイム配信を開始します。</div>
+  <div class="grid" id="cards"></div>
+</section>
+
+<section class="panel">
+  <div class="setting">
+    <input id="apiKey" type="password" autocomplete="off" placeholder="Twelve Data API Key（端末内だけに保存）">
+    <button id="connect">接続</button>
+  </div>
+  <div class="small">
+    APIキーはこの端末のブラウザ内（localStorage）にのみ保存します。公開GitHubページのHTMLには埋め込みません。
+    配信元・銘柄によってリアルタイム/遅延の条件が異なるため、各カードに受信時刻を表示します。
+  </div>
+</section>
+
+<section class="panel report">
+  <img src="report.png" alt="現在の世界情勢とマーケット分析">
+</section>
 </main>
+
+<script>
+const instruments = [
+ {id:'wti',name:'WTI原油',sym:'WTI/USD',unit:'USD/bbl'},
+ {id:'brent',name:'Brent原油',sym:'BRENT/USD',unit:'USD/bbl'},
+ {id:'gold',name:'金',sym:'XAU/USD',unit:'USD/oz'},
+ {id:'dxy',name:'ドル指数',sym:'DXY',unit:''},
+ {id:'us10y',name:'米10年債利回り',sym:'US10Y',unit:'%'},
+ {id:'nikkei',name:'日経225',sym:'N225',unit:''},
+ {id:'spx',name:'S&P 500',sym:'SPX',unit:''},
+ {id:'usdjpy',name:'USD/JPY',sym:'USD/JPY',unit:''},
+ {id:'eurusd',name:'EUR/USD',sym:'EUR/USD',unit:''},
+ {id:'gbpusd',name:'GBP/USD',sym:'GBP/USD',unit:''},
+ {id:'audusd',name:'AUD/USD',sym:'AUD/USD',unit:''},
+ {id:'nzdusd',name:'NZD/USD',sym:'NZD/USD',unit:''},
+ {id:'usdcad',name:'USD/CAD',sym:'USD/CAD',unit:''},
+ {id:'usdchf',name:'USD/CHF',sym:'USD/CHF',unit:''},
+ {id:'usdmxn',name:'USD/MXN',sym:'USD/MXN',unit:''},
+ {id:'usdtry',name:'USD/TRY',sym:'USD/TRY',unit:''}
+];
+
+const cards = document.getElementById('cards');
+const statusEl = document.getElementById('status');
+const clockEl = document.getElementById('clock');
+const keyEl = document.getElementById('apiKey');
+let ws = null;
+const state = {};
+const key = 'asano_td_api_key';
+keyEl.value = localStorage.getItem(key) || '';
+
+function render(){
+  cards.innerHTML = instruments.map(x=>{
+    const s = state[x.sym];
+    const price = s?.price;
+    const change = s?.change;
+    const cls = change > 0 ? 'up' : change < 0 ? 'down' : 'flat';
+    const arrow = change > 0 ? '▲' : change < 0 ? '▼' : '―';
+    return `<article class="card">
+      <div class="name">${x.name}</div><div class="sym">${x.sym}</div>
+      <div class="price">${price==null?'—':Number(price).toLocaleString('en-US',{maximumFractionDigits:4})}${x.unit?` <small>${x.unit}</small>`:''}</div>
+      <div class="chg ${cls}">${change==null?'待機中':`${arrow} ${Number(change).toFixed(2)}%`}</div>
+      <div class="ts">${s?.time ? new Date(s.time).toLocaleString('ja-JP',{hour12:false}) : '未受信'}</div>
+    </article>`;
+  }).join('');
+}
+render();
+
+function disconnect(){
+  if(ws){ try{ws.close();}catch(e){} ws=null; }
+}
+function connect(){
+  const apiKey = keyEl.value.trim();
+  if(!apiKey){statusEl.textContent='APIキーを入力してください。';return;}
+  localStorage.setItem(key,apiKey);
+  disconnect();
+  statusEl.textContent='Twelve Dataへ接続中…';
+  const symbols = instruments.map(x=>x.sym).join(',');
+  ws = new WebSocket('wss://ws.twelvedata.com/v1/quotes/price?apikey='+encodeURIComponent(apiKey));
+  ws.onopen=()=>{
+    statusEl.textContent='LIVE接続中 — 受信した銘柄から順次更新します。';
+    ws.send(JSON.stringify({action:'subscribe',params:{symbols}}));
+  };
+  ws.onmessage=(ev)=>{
+    try{
+      const d=JSON.parse(ev.data);
+      if(d.event==='price' && d.symbol){
+        const prev=state[d.symbol]?.price;
+        state[d.symbol]={price:Number(d.price),time:d.timestamp?Number(d.timestamp)*1000:Date.now(),change: d.day_change!=null?Number(d.day_change):(prev?((Number(d.price)-prev)/prev*100):null)};
+        render();
+      } else if(d.status==='error'){
+        statusEl.textContent='データ取得エラー: '+(d.message||'銘柄/プランを確認してください');
+      }
+    }catch(e){}
+  };
+  ws.onerror=()=>{statusEl.textContent='接続エラー。APIキーまたは配信対象プランを確認してください。';};
+  ws.onclose=()=>{if(document.visibilityState==='visible') statusEl.textContent='接続終了。再接続する場合は「接続」を押してください。';};
+}
+document.getElementById('connect').addEventListener('click',connect);
+clockEl.textContent=new Date().toLocaleString('ja-JP',{hour12:false})+' JST';
+setInterval(()=>clockEl.textContent=new Date().toLocaleString('ja-JP',{hour12:false})+' JST',1000);
+</script>
 </body>
 </html>
